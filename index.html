@@ -424,6 +424,7 @@
 
           globalNetwork.on("stabilized", onStabilized);
           globalNetwork.on("selectNode", onNodeClick);
+          globalNetwork.on("doubleClick", onNodeDoubleClick);
           globalNetwork.on("hoverNode", onNodeHover);
           globalNetwork.on("blurNode", onNodeBlur);
 
@@ -792,13 +793,20 @@
           function onNodeClick(params) {
               if (params.nodes.length === 1) {
                   var node = params.nodes[0];
-                  window.open(tempNetwork.body.nodes[node].options.url,
-                              "_self");
                   currentNode = node;
                   // If we are in the buffer view, draw new node
                   if ($("#buffer-network").css("display") === "block") {
                       drawBufferNetwork();
                   }
+              }
+          }
+
+          function onNodeDoubleClick(params) {
+              if (params.nodes.length === 1) {
+                  var node = params.nodes[0];
+                  window.open(tempNetwork.body.nodes[node].options.url,
+                              "_self");
+                  currentNode = node;
               }
           }
 
@@ -892,6 +900,7 @@
                    edges:roamData.edges},
                   options);
               bufferNetwork.on("selectNode", onNodeClick);
+              bufferNetwork.on("doubleClick", onNodeDoubleClick);
               bufferNetwork.on("hoverNode", onNodeHover);
               bufferNetwork.on("blurNode", onNodeBlur);
 
