@@ -206,6 +206,12 @@ In the first case options are applied to all edges."
                              (s-replace link (format "[[image:%s]]" path) file-string)))))
                (erase-buffer)
                (insert file-string)))
+         ;; Handle custom link types: converted to file:
+         (let ((file-string (buffer-string)))
+           (dolist (type org-roam-link-types)
+             (setq file-string (s-replace (concat "[[" type ":") "[[file:" file-string)))
+           (erase-buffer)
+           (insert file-string))
          (setq html-string (org-export-as 'html)))
        (insert html-string))))
 
@@ -224,7 +230,7 @@ This is added as a hook to `org-capture-after-finalize-hook'."
            (nodes (-distinct (org-roam-db-query node-query)))
            (edges-query
             `[:with selected :as [:select [file] :from ,node-query]
-                    :select :distinct [to from] :from links
+                    :select :distinct [to from type properties] :from links
                     :where (and (in to selected) (in from selected))])
            (edges-cites-query
             `[:with selected :as [:select [file] :from ,node-query]
@@ -378,6 +384,8 @@ DESCRIPTION is the shown attribute to the user if the image is not rendered."
     (add-hook 'org-capture-after-finalize-hook #'org-roam-server-capture-servlet)
     (org-link-set-parameters "server" :export #'org-roam-server-export-server-id)
     (org-link-set-parameters "file" :export #'org-roam-server-export-file-id)
+    (dolist typ org-roam-link-types
+            (org-link-set-parameters typ :export #'org-roam-server-export-file-id))
     (org-link-set-parameters "image" :export #'org-roam-server-export-image-id)
     (setq-local httpd-port org-roam-server-port)
     (setq-local httpd-host org-roam-server-host)
@@ -497,9 +505,16 @@ DESCRIPTION is the shown attribute to the user if the image is not rendered."
                   (pcase-let ((`(_ _ ,props) backlink))
                     (insert (s-trim
                              (s-replace "\n" " "
-                                        (s-replace
-                                         (format "file:%s" (file-truename org-roam-directory))
-                                         "server:" (plist-get props :content)))))
+                                         (s-replace
+                                          (format "file:%s" (file-truename org-roam-directory))
+                                          "server:"
+                                          (let ((str (plist-get props :content)))
+                                            (dolist (typ org-roam-link-types str)
+                                              (setq str (s-replace 
+                                                         (format (concat typ ":%s")
+                                                                 (file-truename org-roam-directory))
+                                                         "server:"
+                                                         str))))))))
                     (insert "\n\n"))))))
         (insert "\n\n* No backlinks!"))))
 
