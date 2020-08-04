@@ -208,7 +208,7 @@ In the first case options are applied to all edges."
                (insert file-string)))
          ;; Handle custom link types: converted to file:
          (let ((file-string (buffer-string)))
-           (dolist (type org-roam-link-types)
+           (dolist (type org-roam-extra-link-types)
              (setq file-string (s-replace (concat "[[" type ":") "[[file:" file-string)))
            (erase-buffer)
            (insert file-string))
@@ -384,7 +384,7 @@ DESCRIPTION is the shown attribute to the user if the image is not rendered."
     (add-hook 'org-capture-after-finalize-hook #'org-roam-server-capture-servlet)
     (org-link-set-parameters "server" :export #'org-roam-server-export-server-id)
     (org-link-set-parameters "file" :export #'org-roam-server-export-file-id)
-    (dolist (typ org-roam-link-types)
+    (dolist (typ org-roam-extra-link-types)
             (org-link-set-parameters typ :export #'org-roam-server-export-file-id))
     (org-link-set-parameters "image" :export #'org-roam-server-export-image-id)
     (setq-local httpd-port org-roam-server-port)
@@ -509,7 +509,7 @@ DESCRIPTION is the shown attribute to the user if the image is not rendered."
                                           (format "file:%s" (file-truename org-roam-directory))
                                           "server:"
                                           (let ((str (plist-get props :content)))
-                                            (dolist (typ org-roam-link-types str)
+                                            (dolist (typ org-roam-extra-link-types str)
                                               (setq str (s-replace 
                                                          (format (concat typ ":%s")
                                                                  (file-truename org-roam-directory))
