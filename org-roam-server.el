@@ -384,7 +384,7 @@ DESCRIPTION is the shown attribute to the user if the image is not rendered."
     (add-hook 'org-capture-after-finalize-hook #'org-roam-server-capture-servlet)
     (org-link-set-parameters "server" :export #'org-roam-server-export-server-id)
     (org-link-set-parameters "file" :export #'org-roam-server-export-file-id)
-    (dolist typ org-roam-link-types
+    (dolist (typ org-roam-link-types)
             (org-link-set-parameters typ :export #'org-roam-server-export-file-id))
     (org-link-set-parameters "image" :export #'org-roam-server-export-image-id)
     (setq-local httpd-port org-roam-server-port)
