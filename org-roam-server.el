@@ -208,7 +208,7 @@ In the first case options are applied to all edges."
                (insert file-string)))
          ;; Handle custom link types: converted to file:
          (let ((file-string (buffer-string)))
-           (dolist (type org-roam-extra-link-types)
+           (dolist (type org-roam-server-link-types)
              (setq file-string (s-replace (concat "[[" type ":") "[[file:" file-string)))
            (erase-buffer)
            (insert file-string))
@@ -230,11 +230,11 @@ This is added as a hook to `org-capture-after-finalize-hook'."
            (nodes (-distinct (org-roam-db-query node-query)))
            (edges-query
             `[:with selected :as [:select [file] :from ,node-query]
-                    :select :distinct [to from type properties] :from links
+                    :select :distinct [to from type] :from links
                     :where (and (in to selected) (in from selected))])
            (edges-cites-query
             `[:with selected :as [:select [file] :from ,node-query]
-                    :select :distinct [file from] :from links
+                    :select :distinct [file from links:type] :from links
                     :inner :join refs :on (and (= links:to refs:ref)
                                                (= links:type "cite")
                                                (= refs:type "cite"))
@@ -290,9 +290,18 @@ This is added as a hook to `org-capture-after-finalize-hook'."
       (dolist (edge edges-cites)
         (let* ((title-source (org-roam--path-to-slug (elt edge 0)))
                (title-target (org-roam--path-to-slug (elt edge 1))))
-          (push (remove nil (list (cons 'from title-source)
-                                  (cons 'to title-target)
-                                  (cons 'arrows org-roam-server-network-arrows)))
+          (push (remove nil (append (list (cons 'from title-source)
+                                          (cons 'to title-target)
+                                          (cons 'arrows org-roam-server-network-arrows))
+                                    (pcase org-roam-server-extra-edge-options
+                                      ('nil nil)
+                                      ((pred functionp)
+                                       (funcall org-roam-server-extra-edge-options edge))
+                                      ((pred listp)
+                                       org-roam-server-extra-edge-options)
+                                      (wrong-type
+                                       (error "Wrong type of org-roam-server-extra-edge-options: %s"
+                                              wrong-type)))))
                 (cdr (elt graph 1)))))
       (json-encode graph))))
 
@@ -384,7 +393,7 @@ DESCRIPTION is the shown attribute to the user if the image is not rendered."
     (add-hook 'org-capture-after-finalize-hook #'org-roam-server-capture-servlet)
     (org-link-set-parameters "server" :export #'org-roam-server-export-server-id)
     (org-link-set-parameters "file" :export #'org-roam-server-export-file-id)
-    (dolist (typ org-roam-extra-link-types)
+    (dolist (typ org-roam-server-link-types)
             (org-link-set-parameters typ :export #'org-roam-server-export-file-id))
     (org-link-set-parameters "image" :export #'org-roam-server-export-image-id)
     (setq-local httpd-port org-roam-server-port)
@@ -505,16 +514,13 @@ DESCRIPTION is the shown attribute to the user if the image is not rendered."
                   (pcase-let ((`(_ _ ,props) backlink))
                     (insert (s-trim
                              (s-replace "\n" " "
-                                         (s-replace
-                                          (format "file:%s" (file-truename org-roam-directory))
-                                          "server:"
                                           (let ((str (plist-get props :content)))
-                                            (dolist (typ org-roam-extra-link-types str)
+                                            (dolist (typ org-roam-server-link-types str)
                                               (setq str (s-replace 
                                                          (format (concat typ ":%s")
                                                                  (file-truename org-roam-directory))
                                                          "server:"
-                                                         str))))))))
+                                                         str)))))))
                     (insert "\n\n"))))))
         (insert "\n\n* No backlinks!"))))
 
