@@ -899,6 +899,7 @@
                   {nodes:bufferNodes,
                    edges:roamData.edges},
                   options);
+              bufferNetwork.on("stabilized", onStabilized);
               bufferNetwork.on("selectNode", onNodeClick);
               bufferNetwork.on("doubleClick", onNodeDoubleClick);
               bufferNetwork.on("hoverNode", onNodeHover);
