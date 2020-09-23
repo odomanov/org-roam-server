@@ -211,6 +211,12 @@ or [{ \"id\": \"test\", \"parent\" : \"tags\"  }]"
                "the files are served with the org-roam-server instead of an external server."
                "org-roam-server 1.0.5")
 
+(defun org-roam-server-add-link-type (type name plist)
+  "Add link TYPE with NAME and PLIST."
+  (setplist type plist)
+  (put type :name name)
+  (add-to-list 'org-roam-server-link-types type))
+
 (defun org-roam-server-random-token (length)
   "Create a random token with length of `LENGTH`."
   (with-temp-buffer
@@ -284,7 +290,7 @@ or [{ \"id\": \"test\", \"parent\" : \"tags\"  }]"
          ;; Handle custom link types: converted to file:
          (let ((file-string (buffer-string)))
            (dolist (type org-roam-server-link-types)
-             (setq file-string (s-replace (concat "[[" type ":") "[[file:" file-string)))
+             (setq file-string (s-replace (concat "[[" (get type :name) ":") "[[file:" file-string)))
            (erase-buffer)
            (insert file-string))
          (setq html-string (org-export-as 'html)))
@@ -483,7 +489,10 @@ DESCRIPTION is the shown attribute to the user if the image is not rendered."
     (org-link-set-parameters "server" :export #'org-roam-server-export-server-id)
     (org-link-set-parameters "file" :export #'org-roam-server-export-file-id)
     (dolist (typ org-roam-server-link-types)
-            (org-link-set-parameters typ :export #'org-roam-server-export-file-id))
+      ;; (message "typ=%S,\n  name=%S\n  plist=%S" typ (get typ :name) (symbol-plist typ))
+      (let* ((lname (get typ :name))
+             (plist (org-plist-delete (symbol-plist typ) :name)))
+        (apply #'org-link-set-parameters lname plist)))
     (org-link-set-parameters "image" :export #'org-roam-server-export-image-id)
     (setq-local httpd-port org-roam-server-port)
     (setq-local httpd-host org-roam-server-host)
@@ -614,7 +623,7 @@ DESCRIPTION is the shown attribute to the user if the image is not rendered."
                                           (let ((str (plist-get props :content)))
                                             (dolist (typ org-roam-server-link-types str)
                                               (setq str (s-replace 
-                                                         (format (concat typ ":%s")
+                                                         (format (concat (get typ :name) ":%s")
                                                                  (f-full org-roam-directory))
                                                          "server:"
                                                          str)))))))
