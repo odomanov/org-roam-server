@@ -287,12 +287,6 @@ or [{ \"id\": \"test\", \"parent\" : \"tags\"  }]"
                              (s-replace link (format "[[image:%s]]" path) file-string)))))
                (erase-buffer)
                (insert file-string)))
-         ;; Handle custom link types: converted to file:
-         (let ((file-string (buffer-string)))
-           (dolist (type org-roam-server-link-types)
-             (setq file-string (s-replace (concat "[[" (get type :name) ":") "[[file:" file-string)))
-           (erase-buffer)
-           (insert file-string))
          (setq html-string (org-export-as 'html)))
        (insert html-string))))
 
@@ -434,7 +428,7 @@ DESCRIPTION is the shown attribute to the user."
   (let ((desc (or description link)))
     (pcase format
       (`html
-       (when (org-roam--org-roam-file-p link)
+       (when (org-roam--org-roam-file-p (concat (expand-file-name org-roam-directory) link))
          (let ((html-link (concat (file-name-sans-extension link) ".html")))
            (if org-roam-server-authenticate
                (format "<a href=%s?token=%s>%s</a>"
@@ -489,7 +483,6 @@ DESCRIPTION is the shown attribute to the user if the image is not rendered."
     (org-link-set-parameters "server" :export #'org-roam-server-export-server-id)
     (org-link-set-parameters "file" :export #'org-roam-server-export-file-id)
     (dolist (typ org-roam-server-link-types)
-      ;; (message "typ=%S,\n  name=%S\n  plist=%S" typ (get typ :name) (symbol-plist typ))
       (let* ((lname (get typ :name))
              (plist (org-plist-delete (symbol-plist typ) :name)))
         (apply #'org-link-set-parameters lname plist)))
@@ -505,7 +498,7 @@ DESCRIPTION is the shown attribute to the user if the image is not rendered."
         (let ((nodes (-distinct (org-roam-db-query node-query))))
           (dotimes (idx (length nodes))
             (let ((file (xml-escape-string (car (elt nodes idx)))))
-              (if (org-roam--org-roam-file-p file)
+              (if (org-roam--org-roam-file-p (concat (expand-file-name org-roam-directory) file))
                   (eval (org-roam-server-html-servlet file)))))))))
    (t
     (remove-hook 'post-command-hook #'org-roam-server-find-file-hook-function t)
