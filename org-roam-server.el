@@ -211,12 +211,6 @@ or [{ \"id\": \"test\", \"parent\" : \"tags\"  }]"
                "the files are served with the org-roam-server instead of an external server."
                "org-roam-server 1.0.5")
 
-(defun org-roam-server-add-link-type (type name plist)
-  "Add link TYPE with NAME and PLIST."
-  (setplist type plist)
-  (put type :name name)
-  (add-to-list 'org-roam-server-link-types type))
-
 (defun org-roam-server-random-token (length)
   "Create a random token with length of `LENGTH`."
   (with-temp-buffer
@@ -232,6 +226,21 @@ or [{ \"id\": \"test\", \"parent\" : \"tags\"  }]"
     (dolist (token (cdr tokens))
       (setq result (format "%s\\|%s" result token)))
     result))
+
+(defun org-roam-server-add-link-type (type name &rest plist)
+  "Add link TYPE with NAME and PLIST."
+  (setplist type (-cons* plist))
+  (put type :name name)
+  (if (not (boundp 'org-roam-server-link-types))
+      (setq org-roam-server-link-types ()))
+  (add-to-list 'org-roam-server-link-types type))
+
+(org-roam-server-add-link-type 'server "server"
+                               :export #'org-roam-server-export-server-id)
+(org-roam-server-add-link-type 'file "file"
+                               :export #'org-roam-server-export-file-id)
+(org-roam-server-add-link-type 'image "image"
+                               :export #'org-roam-server-export-image-id)
 
 (defun org-roam-server-html-servlet (file)
   "Export the FILE to HTML and create a servlet for it."
@@ -480,13 +489,10 @@ DESCRIPTION is the shown attribute to the user if the image is not rendered."
             (outline-show-all))))
     (add-hook 'post-command-hook #'org-roam-server-find-file-hook-function)
     (add-hook 'org-capture-after-finalize-hook #'org-roam-server-capture-servlet)
-    (org-link-set-parameters "server" :export #'org-roam-server-export-server-id)
-    (org-link-set-parameters "file" :export #'org-roam-server-export-file-id)
     (dolist (typ org-roam-server-link-types)
       (let* ((lname (get typ :name))
              (plist (org-plist-delete (symbol-plist typ) :name)))
         (apply #'org-link-set-parameters lname plist)))
-    (org-link-set-parameters "image" :export #'org-roam-server-export-image-id)
     (setq-local httpd-port org-roam-server-port)
     (setq-local httpd-host org-roam-server-host)
     (setq httpd-root org-roam-server-root)
