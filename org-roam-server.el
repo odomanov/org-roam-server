@@ -227,19 +227,17 @@ or [{ \"id\": \"test\", \"parent\" : \"tags\"  }]"
       (setq result (format "%s\\|%s" result token)))
     result))
 
-(defun org-roam-server-add-link-type (type name &rest plist)
+(defun org-roam-server-add-link-type (type &rest plist)
   "Add link TYPE with NAME and PLIST."
-  (setplist type (-cons* plist))
-  (put type :name name)
-  (if (not (boundp 'org-roam-server-link-types))
-      (setq org-roam-server-link-types ()))
-  (add-to-list 'org-roam-server-link-types type))
+    (if (not (boundp 'org-roam-server-link-types))
+        (setq org-roam-server-link-types ()))
+    (add-to-list 'org-roam-server-link-types (cons type plist)))
 
-(org-roam-server-add-link-type 'server "server"
+(org-roam-server-add-link-type "server"
                                :export #'org-roam-server-export-server-id)
-(org-roam-server-add-link-type 'file "file"
+(org-roam-server-add-link-type "file"
                                :export #'org-roam-server-export-file-id)
-(org-roam-server-add-link-type 'image "image"
+(org-roam-server-add-link-type "image"
                                :export #'org-roam-server-export-image-id)
 
 (defun org-roam-server-html-servlet (file)
@@ -490,9 +488,7 @@ DESCRIPTION is the shown attribute to the user if the image is not rendered."
     (add-hook 'post-command-hook #'org-roam-server-find-file-hook-function)
     (add-hook 'org-capture-after-finalize-hook #'org-roam-server-capture-servlet)
     (dolist (typ org-roam-server-link-types)
-      (let* ((lname (get typ :name))
-             (plist (org-plist-delete (symbol-plist typ) :name)))
-        (apply #'org-link-set-parameters lname plist)))
+        (apply #'org-link-set-parameters typ))
     (setq-local httpd-port org-roam-server-port)
     (setq-local httpd-host org-roam-server-host)
     (setq httpd-root org-roam-server-root)
@@ -622,7 +618,7 @@ DESCRIPTION is the shown attribute to the user if the image is not rendered."
                                           (let ((str (plist-get props :content)))
                                             (dolist (typ org-roam-server-link-types str)
                                               (setq str (s-replace 
-                                                         (format (concat (get typ :name) ":%s")
+                                                         (format (concat (car typ) ":%s")
                                                                  (f-full org-roam-directory))
                                                          "server:"
                                                          str)))))))
