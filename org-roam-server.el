@@ -440,7 +440,7 @@ DESCRIPTION is the shown attribute to the user."
   (let ((desc (or description link)))
     (pcase format
       (`html
-       (when (org-roam--org-roam-file-p (concat (expand-file-name org-roam-directory) link))
+       (when (org-roam--org-roam-file-p link)
          (let ((html-link (concat (file-name-sans-extension link) ".html")))
            (if org-roam-server-authenticate
                (format "<a href=%s?token=%s>%s</a>"
@@ -505,7 +505,7 @@ DESCRIPTION is the shown attribute to the user if the image is not rendered."
         (let ((nodes (-distinct (org-roam-db-query node-query))))
           (dotimes (idx (length nodes))
             (let ((file (xml-escape-string (car (elt nodes idx)))))
-              (if (org-roam--org-roam-file-p (concat (expand-file-name org-roam-directory) file))
+              (if (org-roam--org-roam-file-p file)
                   (eval (org-roam-server-html-servlet file)))))))))
    (t
     (remove-hook 'post-command-hook #'org-roam-server-find-file-hook-function t)
