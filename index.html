@@ -49,17 +49,16 @@
           z-index: 100;
       }
 
-      #iframe-button {
-          display: block;
+      #iframe-buttons {
           position: absolute;
           z-index: 101;
       }
 
-      #edit-button {
-          display: block;
-          position: absolute;
-          left: 5em;
-          z-index: 101;
+      #back-button,
+      #edit-button,
+      #refresh-button {
+          display: inline-block;
+          z-index: 102;
       }
 
       #view-menu {
@@ -174,7 +173,7 @@
     </div>
     <div class="box" id="preview-frame">
       <button class="btn btn-link float-left"
-              id="iframe-button"
+              id="back-button"
               onclick="history.back()"> Back </button>
       <iframe src="" id="hovernode">
       </iframe>
@@ -245,8 +244,11 @@
     <div id="buffer-network"></div>
     <div id="temp-network"></div>
     <div class="fileframe" id="fileframe">
-      <button class="btn btn-link float-left" id="iframe-button">Back</button>
-      <button class="btn btn-link" id="edit-button">Edit</button>
+      <div id="iframe-buttons">
+        <button class="btn btn-link float-left" id="back-button">Back</button>
+        <button class="btn btn-link" id="edit-button">Edit</button>
+        <button class="btn btn-link" id="refresh-button">Refresh</button>
+      </div>
       <iframe src="" id="filenode"></iframe>
       <iframe src="" id="backlinks"></iframe>
     </div>
@@ -326,7 +328,6 @@
               }
           });
 
-          var currentFilenodePath;
           var previewFrame = document.getElementById("preview-frame"); // div
           var hoverNode = document.getElementById("hovernode"); // iframe
           var globalNetwork;
@@ -341,21 +342,42 @@
           $("#fileframe").css("OTransform", transformString);
           $("#fileframe").css("transform", transformString);
 
-          $("#fileframe #iframe-button")
+          $("#fileframe #back-button")
               .on("click", function iframeGoBack() {
                   if (darkmode) {
                       // Hide iframes until the page is loaded
                       // to prevent flickering
                       $("#fileframe").css("display", "none");
                   }
-                  window.history.back()
+                  window.history.back();
               });
 
           $("#fileframe #edit-button")
-              .on("click", function iframeGoEdit() {
-                  const url = "org-protocol://roam-file?file="
-                        .concat(currentFilenodePath);
-                  window.open(url, "_self");
+              .on("click", function () {
+                  const url = new URL(document.getElementById("filenode")
+                                      .contentWindow.location.href);
+                  let string = url.pathname.substring(
+                      1, url.pathname.lastIndexOf('.'));
+                  for (let i = 0; i < select2Data.length; i++) {
+                      if (select2Data[i].id === string) {
+                          window.open("org-protocol://roam-file?file="
+                                      .concat(select2Data[i].path),
+                                      "_self");
+                          break
+                      }
+                  }
+              });
+
+          $("#fileframe #refresh-button")
+              .on("click", function () {
+                  if (darkmode) {
+                      // Hide iframes until the page is loaded
+                      // to prevent flickering
+                      $("#fileframe").css("display", "none");
+                  }
+                  const url = document.getElementById("filenode")
+                        .contentWindow.location.href;
+                  $("#filenode").attr("src", url);
               });
 
           function onWindowResize () {
@@ -567,8 +589,9 @@
               }
           }
 
+          var select2Data = [];
           function updateDropdown() {
-              var select2Data = [];
+              select2Data = [];
               for (let i = 0 ; i < roamData.nodes.length; i++) {
                   select2Data.push({id: roamData.nodes[i].id,
                                     text: roamData.nodes[i].title,
@@ -668,7 +691,6 @@
                       if (select2Data[i].id === string) {
                           link = `org-roam-buffer?path=${select2Data[i].path}&` +
                               `label=${select2Data[i].text}&token=${token}`;
-                          currentFilenodePath = select2Data[i].path;
                           break
                       }
                   }
