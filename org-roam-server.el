@@ -70,6 +70,13 @@
           (file-attribute-modification-time
            (file-attributes org-roam-db-location)))))
 
+(defvar org-roam-server-link-types
+  '(("image" :export org-roam-server-export-image-id)
+    ("file" :export org-roam-server-export-file-id)
+    ("server" :export org-roam-server-export-server-id))
+  "The list of link types recognized by org-roam-server 
+with parameters.")
+
 (defgroup org-roam-server nil
   "org-roam-server customizable variables."
   :group 'org-roam)
@@ -233,17 +240,13 @@ or [{ \"id\": \"test\", \"parent\" : \"tags\"  }]"
     result))
 
 (defun org-roam-server-add-link-type (type &rest plist)
-  "Add link TYPE with NAME and PLIST."
+  "Add link TYPE with properties PLIST.
+The function adds the list (cons TYPE PLIST) to the variable
+`org-roam-server-link-types' to be used later for setting
+link properties with `org-link-set-parameters'."
     (if (not (boundp 'org-roam-server-link-types))
         (setq org-roam-server-link-types ()))
     (add-to-list 'org-roam-server-link-types (cons type plist)))
-
-(org-roam-server-add-link-type "server"
-                               :export #'org-roam-server-export-server-id)
-(org-roam-server-add-link-type "file"
-                               :export #'org-roam-server-export-file-id)
-(org-roam-server-add-link-type "image"
-                               :export #'org-roam-server-export-image-id)
 
 (defun org-roam-server-html-servlet (file)
   "Export the FILE to HTML and create a servlet for it."
