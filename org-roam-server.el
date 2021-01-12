@@ -50,6 +50,8 @@
 (require 'org-roam-graph)
 (require 'org-roam-buffer)
 
+(require 'filestore-git)
+
 ;;; Code:
 
 (defvar org-roam-server-data nil)
@@ -312,6 +314,7 @@ This is added as a hook to `org-capture-after-finalize-hook'."
     (if-let ((file (org-roam-capture--get :file-path)))
         (eval (org-roam-server-html-servlet file)))))
 
+;; TODO: filestore
 (defun org-roam-server-visjs-json (node-query)
   "Convert `org-roam` NODE-QUERY db query to the visjs json format."
   (org-roam-db--ensure-built)
@@ -502,7 +505,7 @@ DESCRIPTION is the shown attribute to the user if the image is not rendered."
     (setq httpd-root org-roam-server-root)
     (httpd-start)
     (let ((-compare-fn (lambda (x y) (string= (car x) (car y))))
-          (node-query `[:select [file title] :from titles
+          (node-query `[:select [file title] :from titles            ;; TODO: filestore
                                 ,@(org-roam-graph--expand-matcher 'file t)]))
       (org-roam--with-temp-buffer nil
         (let ((nodes (-distinct (org-roam-db-query node-query))))
@@ -543,7 +546,7 @@ DESCRIPTION is the shown attribute to the user if the image is not rendered."
   (if org-roam-server-authenticate
       (if (not (string= org-roam-server-token token))
           (httpd-error httpd-current-proc 403)))
-  (let ((node-query `[:select [titles:file titles:title tags] :from titles
+  (let ((node-query `[:select [titles:file titles:title tags] :from titles           ;; TODO: filestore
                               :left :outer :join tags :on (= titles:file tags:file)
                               ,@(org-roam-graph--expand-matcher 'titles:file t)]))
     (if force
